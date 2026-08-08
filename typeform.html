@@ -12,7 +12,6 @@
 </head>
 <body class="tf-body">
 
-    <!-- HEADER -->
     <header class="tf-header">
         <div class="tf-header__inner">
             <div class="tf-header__logo">Iván López <span>· Asesor Inmobiliario</span></div>
@@ -20,24 +19,28 @@
                 <div class="tf-progress-bar">
                     <div class="tf-progress-bar__fill" id="progress-fill"></div>
                 </div>
-                <span class="tf-progress-text" id="progress-text">1 de 10</span>
+                <span class="tf-progress-text" id="progress-text">1 de 14</span>
             </div>
         </div>
     </header>
 
-    <!-- STEPS CONTAINER -->
     <main class="tf-main" id="tf-main">
 
-        <!-- STEP 1 — Código postal -->
+        <!-- STEP 1 — ¿Eres propietario? -->
         <div class="tf-step" id="step-1">
             <div class="tf-step__inner">
                 <div class="tf-step__num">01 →</div>
-                <h2 class="tf-step__titulo">¿Cuál es el código postal de tu vivienda?</h2>
-                <p class="tf-step__subtitulo">Introduce los 5 dígitos para localizar tu zona en el mapa</p>
-                <div class="tf-cp-wrapper">
-                    <input class="tf-input tf-input--lg" type="text" id="tf-cp" placeholder="08191" maxlength="5" autocomplete="off">
-                    <div class="tf-map" id="tf-map"></div>
-                    <div class="tf-map__label" id="tf-map-label"></div>
+                <h2 class="tf-step__titulo">¿Eres propietario del inmueble?</h2>
+                <p class="tf-step__subtitulo">Solo necesitamos saberlo para personalizar tu valoración</p>
+                <div class="tf-options">
+                    <button class="tf-option" data-value="true" onclick="selectOption(this, 'es_propietario', 1)">
+                        <span class="tf-option__icon">✅</span>
+                        <span class="tf-option__label">Sí, soy propietario</span>
+                    </button>
+                    <button class="tf-option" data-value="false" onclick="selectOption(this, 'es_propietario', 1)">
+                        <span class="tf-option__icon">🔍</span>
+                        <span class="tf-option__label">No, estoy buscando información</span>
+                    </button>
                 </div>
                 <div class="tf-nav">
                     <button class="tf-btn tf-btn--primary" onclick="nextStep(1)" id="btn-step-1">
@@ -47,20 +50,20 @@
             </div>
         </div>
 
-        <!-- STEP 2 — Tipo de inmueble -->
+        <!-- STEP 2 — ¿Quieres vender? -->
         <div class="tf-step" id="step-2">
             <div class="tf-step__inner">
                 <div class="tf-step__num">02 →</div>
-                <h2 class="tf-step__titulo">¿Qué tipo de inmueble es?</h2>
-                <p class="tf-step__subtitulo">Selecciona la opción que mejor describe tu vivienda</p>
+                <h2 class="tf-step__titulo">¿Estás pensando en vender tu vivienda?</h2>
+                <p class="tf-step__subtitulo">No hay respuesta incorrecta</p>
                 <div class="tf-options">
-                    <button class="tf-option" data-value="14" onclick="selectOption(this, 'tipo_inmueble', 2)">
-                        <span class="tf-option__icon">🏢</span>
-                        <span class="tf-option__label">Piso / Apartamento</span>
+                    <button class="tf-option" data-value="true" onclick="selectOption(this, 'quiere_vender', 2)">
+                        <span class="tf-option__icon">🏠</span>
+                        <span class="tf-option__label">Sí, quiero venderla</span>
                     </button>
-                    <button class="tf-option" data-value="15" onclick="selectOption(this, 'tipo_inmueble', 2)">
-                        <span class="tf-option__icon">🏡</span>
-                        <span class="tf-option__label">Casa / Chalet</span>
+                    <button class="tf-option" data-value="false" onclick="selectOption(this, 'quiere_vender', 2)">
+                        <span class="tf-option__icon">🤔</span>
+                        <span class="tf-option__label">Todavía lo estoy pensando</span>
                     </button>
                 </div>
                 <div class="tf-nav">
@@ -72,15 +75,31 @@
             </div>
         </div>
 
-        <!-- STEP 3 — Superficie -->
+        <!-- STEP 3 — Plazo de venta -->
         <div class="tf-step" id="step-3">
             <div class="tf-step__inner">
                 <div class="tf-step__num">03 →</div>
-                <h2 class="tf-step__titulo">¿Cuántos m² tiene construidos?</h2>
-                <p class="tf-step__subtitulo">La superficie construida total, incluyendo paredes</p>
-                <div class="tf-input-wrapper">
-                    <input class="tf-input tf-input--lg" type="number" id="tf-superficie" placeholder="85" min="25" max="500">
-                    <span class="tf-input__suffix">m²</span>
+                <h2 class="tf-step__titulo" id="step3-titulo">¿En qué plazo te gustaría venderla?</h2>
+                <p class="tf-step__subtitulo" id="step3-subtitulo">Esto nos ayuda a preparar la mejor estrategia para ti</p>
+                <div class="tf-options" id="step3-opciones">
+                    <button class="tf-option" data-value="3 meses" onclick="selectOption(this, 'plazo_venta', 3)">
+                        <span class="tf-option__icon">⚡</span>
+                        <span class="tf-option__label">Menos de 3 meses</span>
+                        <span class="tf-option__desc">Lo antes posible</span>
+                    </button>
+                    <button class="tf-option" data-value="6 meses" onclick="selectOption(this, 'plazo_venta', 3)">
+                        <span class="tf-option__icon">📅</span>
+                        <span class="tf-option__label">Entre 3 y 6 meses</span>
+                    </button>
+                    <button class="tf-option" data-value="1 año" onclick="selectOption(this, 'plazo_venta', 3)">
+                        <span class="tf-option__icon">🗓️</span>
+                        <span class="tf-option__label">Entre 6 meses y 1 año</span>
+                    </button>
+                    <button class="tf-option" data-value="más de 1 año" onclick="selectOption(this, 'plazo_venta', 3)">
+                        <span class="tf-option__icon">🔮</span>
+                        <span class="tf-option__label">Más de 1 año</span>
+                        <span class="tf-option__desc">Todavía explorando opciones</span>
+                    </button>
                 </div>
                 <div class="tf-nav">
                     <button class="tf-btn tf-btn--ghost" onclick="prevStep(3)">← Atrás</button>
@@ -91,18 +110,15 @@
             </div>
         </div>
 
-        <!-- STEP 4 — Habitaciones -->
+        <!-- STEP 4 — Valor percibido -->
         <div class="tf-step" id="step-4">
             <div class="tf-step__inner">
                 <div class="tf-step__num">04 →</div>
-                <h2 class="tf-step__titulo">¿Cuántas habitaciones tiene?</h2>
-                <p class="tf-step__subtitulo">Sin contar salón ni cocina</p>
-                <div class="tf-options tf-options--row">
-                    <button class="tf-option tf-option--sm" data-value="1" onclick="selectOption(this, 'habitaciones', 4)">1</button>
-                    <button class="tf-option tf-option--sm" data-value="2" onclick="selectOption(this, 'habitaciones', 4)">2</button>
-                    <button class="tf-option tf-option--sm" data-value="3" onclick="selectOption(this, 'habitaciones', 4)">3</button>
-                    <button class="tf-option tf-option--sm" data-value="4" onclick="selectOption(this, 'habitaciones', 4)">4</button>
-                    <button class="tf-option tf-option--sm" data-value="5" onclick="selectOption(this, 'habitaciones', 4)">5+</button>
+                <h2 class="tf-step__titulo">¿Cuánto crees que vale tu vivienda?</h2>
+                <p class="tf-step__subtitulo">Una estimación aproximada — no tiene que ser exacto</p>
+                <div class="tf-input-wrapper">
+                    <input class="tf-input tf-input--lg" type="number" id="tf-valor-percibido" placeholder="200000" min="0">
+                    <span class="tf-input__suffix">€</span>
                 </div>
                 <div class="tf-nav">
                     <button class="tf-btn tf-btn--ghost" onclick="prevStep(4)">← Atrás</button>
@@ -113,16 +129,16 @@
             </div>
         </div>
 
-        <!-- STEP 5 — Baños -->
+        <!-- STEP 5 — Código postal -->
         <div class="tf-step" id="step-5">
             <div class="tf-step__inner">
                 <div class="tf-step__num">05 →</div>
-                <h2 class="tf-step__titulo">¿Cuántos baños tiene?</h2>
-                <p class="tf-step__subtitulo">Incluye baños completos y aseos</p>
-                <div class="tf-options tf-options--row">
-                    <button class="tf-option tf-option--sm" data-value="1" onclick="selectOption(this, 'banos', 5)">1</button>
-                    <button class="tf-option tf-option--sm" data-value="2" onclick="selectOption(this, 'banos', 5)">2</button>
-                    <button class="tf-option tf-option--sm" data-value="3" onclick="selectOption(this, 'banos', 5)">3+</button>
+                <h2 class="tf-step__titulo">¿Cuál es el código postal de tu vivienda?</h2>
+                <p class="tf-step__subtitulo">Introduce los 5 dígitos para localizar tu zona en el mapa</p>
+                <div class="tf-cp-wrapper">
+                    <input class="tf-input tf-input--lg" type="text" id="tf-cp" placeholder="08191" maxlength="5" autocomplete="off">
+                    <div class="tf-map" id="tf-map"></div>
+                    <div class="tf-map__label" id="tf-map-label"></div>
                 </div>
                 <div class="tf-nav">
                     <button class="tf-btn tf-btn--ghost" onclick="prevStep(5)">← Atrás</button>
@@ -133,39 +149,20 @@
             </div>
         </div>
 
-        <!-- STEP 6 — Planta y ascensor -->
+        <!-- STEP 6 — Tipo de inmueble -->
         <div class="tf-step" id="step-6">
             <div class="tf-step__inner">
                 <div class="tf-step__num">06 →</div>
-                <h2 class="tf-step__titulo">¿En qué planta está y tiene ascensor?</h2>
-                <p class="tf-step__subtitulo">La planta influye significativamente en el precio</p>
+                <h2 class="tf-step__titulo">¿Qué tipo de inmueble es?</h2>
+                <p class="tf-step__subtitulo">Selecciona la opción que mejor describe tu vivienda</p>
                 <div class="tf-options">
-                    <button class="tf-option" data-value="bajo|false" onclick="selectOption(this, 'planta_ascensor', 6)">
-                        <span class="tf-option__label">Bajo / Entresuelo</span>
+                    <button class="tf-option" data-value="14" onclick="selectOption(this, 'tipo_inmueble', 6)">
+                        <span class="tf-option__icon">🏢</span>
+                        <span class="tf-option__label">Piso / Apartamento</span>
                     </button>
-                    <button class="tf-option" data-value="1-2|true" onclick="selectOption(this, 'planta_ascensor', 6)">
-                        <span class="tf-option__label">1ª - 2ª con ascensor</span>
-                    </button>
-                    <button class="tf-option" data-value="1-2|false" onclick="selectOption(this, 'planta_ascensor', 6)">
-                        <span class="tf-option__label">1ª - 2ª sin ascensor</span>
-                    </button>
-                    <button class="tf-option" data-value="3-5|true" onclick="selectOption(this, 'planta_ascensor', 6)">
-                        <span class="tf-option__label">3ª - 5ª con ascensor</span>
-                    </button>
-                    <button class="tf-option" data-value="3-5|false" onclick="selectOption(this, 'planta_ascensor', 6)">
-                        <span class="tf-option__label">3ª - 5ª sin ascensor</span>
-                    </button>
-                    <button class="tf-option" data-value="6+|true" onclick="selectOption(this, 'planta_ascensor', 6)">
-                        <span class="tf-option__label">6ª o superior con ascensor</span>
-                    </button>
-                    <button class="tf-option" data-value="6+|false" onclick="selectOption(this, 'planta_ascensor', 6)">
-                        <span class="tf-option__label">6ª o superior sin ascensor</span>
-                    </button>
-                    <button class="tf-option" data-value="atico|true" onclick="selectOption(this, 'planta_ascensor', 6)">
-                        <span class="tf-option__label">Ático con ascensor</span>
-                    </button>
-                    <button class="tf-option" data-value="atico|false" onclick="selectOption(this, 'planta_ascensor', 6)">
-                        <span class="tf-option__label">Ático sin ascensor</span>
+                    <button class="tf-option" data-value="15" onclick="selectOption(this, 'tipo_inmueble', 6)">
+                        <span class="tf-option__icon">🏡</span>
+                        <span class="tf-option__label">Casa / Chalet</span>
                     </button>
                 </div>
                 <div class="tf-nav">
@@ -177,33 +174,15 @@
             </div>
         </div>
 
-        <!-- STEP 7 — Estado -->
+        <!-- STEP 7 — Superficie -->
         <div class="tf-step" id="step-7">
             <div class="tf-step__inner">
                 <div class="tf-step__num">07 →</div>
-                <h2 class="tf-step__titulo">¿En qué estado se encuentra?</h2>
-                <p class="tf-step__subtitulo">El estado de conservación es el factor con mayor impacto en el precio</p>
-                <div class="tf-options">
-                    <button class="tf-option" data-value="a_reformar" onclick="selectOption(this, 'estado', 7)">
-                        <span class="tf-option__icon">🔨</span>
-                        <span class="tf-option__label">A reformar</span>
-                        <span class="tf-option__desc">Necesita obras importantes</span>
-                    </button>
-                    <button class="tf-option" data-value="bueno" onclick="selectOption(this, 'estado', 7)">
-                        <span class="tf-option__icon">✅</span>
-                        <span class="tf-option__label">Bueno</span>
-                        <span class="tf-option__desc">En buen estado, habitable</span>
-                    </button>
-                    <button class="tf-option" data-value="muy_bueno" onclick="selectOption(this, 'estado', 7)">
-                        <span class="tf-option__icon">⭐</span>
-                        <span class="tf-option__label">Muy bueno</span>
-                        <span class="tf-option__desc">Reformado recientemente</span>
-                    </button>
-                    <button class="tf-option" data-value="a_estrenar" onclick="selectOption(this, 'estado', 7)">
-                        <span class="tf-option__icon">🏆</span>
-                        <span class="tf-option__label">A estrenar</span>
-                        <span class="tf-option__desc">Obra nueva o reforma total reciente</span>
-                    </button>
+                <h2 class="tf-step__titulo">¿Cuántos m² tiene construidos?</h2>
+                <p class="tf-step__subtitulo">La superficie construida total, incluyendo paredes</p>
+                <div class="tf-input-wrapper">
+                    <input class="tf-input tf-input--lg" type="number" id="tf-superficie" placeholder="85" min="25" max="500">
+                    <span class="tf-input__suffix">m²</span>
                 </div>
                 <div class="tf-nav">
                     <button class="tf-btn tf-btn--ghost" onclick="prevStep(7)">← Atrás</button>
@@ -214,37 +193,18 @@
             </div>
         </div>
 
-        <!-- STEP 8 — Terraza -->
+        <!-- STEP 8 — Habitaciones -->
         <div class="tf-step" id="step-8">
             <div class="tf-step__inner">
                 <div class="tf-step__num">08 →</div>
-                <h2 class="tf-step__titulo">¿Tiene terraza o balcón?</h2>
-                <p class="tf-step__subtitulo">Los espacios exteriores añaden valor a la vivienda</p>
-                <div class="tf-options">
-                    <button class="tf-option" data-value="false|0" onclick="selectOption(this, 'terraza', 8)">
-                        <span class="tf-option__icon">🚫</span>
-                        <span class="tf-option__label">No tiene</span>
-                    </button>
-                    <button class="tf-option" data-value="true|3" onclick="selectOption(this, 'terraza', 8)">
-                        <span class="tf-option__icon">🌿</span>
-                        <span class="tf-option__label">Balcón pequeño</span>
-                        <span class="tf-option__desc">Menos de 5 m²</span>
-                    </button>
-                    <button class="tf-option" data-value="true|10" onclick="selectOption(this, 'terraza', 8)">
-                        <span class="tf-option__icon">🌳</span>
-                        <span class="tf-option__label">Terraza mediana</span>
-                        <span class="tf-option__desc">Entre 5 y 15 m²</span>
-                    </button>
-                    <button class="tf-option" data-value="true|22" onclick="selectOption(this, 'terraza', 8)">
-                        <span class="tf-option__icon">🌴</span>
-                        <span class="tf-option__label">Terraza grande</span>
-                        <span class="tf-option__desc">Entre 15 y 30 m²</span>
-                    </button>
-                    <button class="tf-option" data-value="true|35" onclick="selectOption(this, 'terraza', 8)">
-                        <span class="tf-option__icon">🏖️</span>
-                        <span class="tf-option__label">Terraza muy grande</span>
-                        <span class="tf-option__desc">Más de 30 m²</span>
-                    </button>
+                <h2 class="tf-step__titulo">¿Cuántas habitaciones tiene?</h2>
+                <p class="tf-step__subtitulo">Sin contar salón ni cocina</p>
+                <div class="tf-options tf-options--row">
+                    <button class="tf-option tf-option--sm" data-value="1" onclick="selectOption(this, 'habitaciones', 8)">1</button>
+                    <button class="tf-option tf-option--sm" data-value="2" onclick="selectOption(this, 'habitaciones', 8)">2</button>
+                    <button class="tf-option tf-option--sm" data-value="3" onclick="selectOption(this, 'habitaciones', 8)">3</button>
+                    <button class="tf-option tf-option--sm" data-value="4" onclick="selectOption(this, 'habitaciones', 8)">4</button>
+                    <button class="tf-option tf-option--sm" data-value="5" onclick="selectOption(this, 'habitaciones', 8)">5+</button>
                 </div>
                 <div class="tf-nav">
                     <button class="tf-btn tf-btn--ghost" onclick="prevStep(8)">← Atrás</button>
@@ -255,28 +215,16 @@
             </div>
         </div>
 
-        <!-- STEP 9 — Extras -->
+        <!-- STEP 9 — Baños -->
         <div class="tf-step" id="step-9">
             <div class="tf-step__inner">
                 <div class="tf-step__num">09 →</div>
-                <h2 class="tf-step__titulo">¿Incluye parking o trastero?</h2>
-                <p class="tf-step__subtitulo">Estos extras tienen un valor fijo independiente del precio del piso</p>
-                <div class="tf-options">
-                    <button class="tf-option" data-value="false|false" onclick="selectOption(this, 'extras', 9)">
-                        <span class="tf-option__label">Ninguno</span>
-                    </button>
-                    <button class="tf-option" data-value="true|false" onclick="selectOption(this, 'extras', 9)">
-                        <span class="tf-option__icon">🚗</span>
-                        <span class="tf-option__label">Solo parking</span>
-                    </button>
-                    <button class="tf-option" data-value="false|true" onclick="selectOption(this, 'extras', 9)">
-                        <span class="tf-option__icon">📦</span>
-                        <span class="tf-option__label">Solo trastero</span>
-                    </button>
-                    <button class="tf-option" data-value="true|true" onclick="selectOption(this, 'extras', 9)">
-                        <span class="tf-option__icon">🚗📦</span>
-                        <span class="tf-option__label">Parking y trastero</span>
-                    </button>
+                <h2 class="tf-step__titulo">¿Cuántos baños tiene?</h2>
+                <p class="tf-step__subtitulo">Incluye baños completos y aseos</p>
+                <div class="tf-options tf-options--row">
+                    <button class="tf-option tf-option--sm" data-value="1" onclick="selectOption(this, 'banos', 9)">1</button>
+                    <button class="tf-option tf-option--sm" data-value="2" onclick="selectOption(this, 'banos', 9)">2</button>
+                    <button class="tf-option tf-option--sm" data-value="3" onclick="selectOption(this, 'banos', 9)">3+</button>
                 </div>
                 <div class="tf-nav">
                     <button class="tf-btn tf-btn--ghost" onclick="prevStep(9)">← Atrás</button>
@@ -287,10 +235,164 @@
             </div>
         </div>
 
-        <!-- STEP 10 — Tus datos -->
+        <!-- STEP 10 — Planta y ascensor -->
         <div class="tf-step" id="step-10">
             <div class="tf-step__inner">
                 <div class="tf-step__num">10 →</div>
+                <h2 class="tf-step__titulo">¿En qué planta está y tiene ascensor?</h2>
+                <p class="tf-step__subtitulo">La planta influye significativamente en el precio</p>
+                <div class="tf-options">
+                    <button class="tf-option" data-value="bajo|false" onclick="selectOption(this, 'planta_ascensor', 10)">
+                        <span class="tf-option__label">Bajo / Entresuelo</span>
+                    </button>
+                    <button class="tf-option" data-value="1-2|true" onclick="selectOption(this, 'planta_ascensor', 10)">
+                        <span class="tf-option__label">1ª - 2ª con ascensor</span>
+                    </button>
+                    <button class="tf-option" data-value="1-2|false" onclick="selectOption(this, 'planta_ascensor', 10)">
+                        <span class="tf-option__label">1ª - 2ª sin ascensor</span>
+                    </button>
+                    <button class="tf-option" data-value="3-5|true" onclick="selectOption(this, 'planta_ascensor', 10)">
+                        <span class="tf-option__label">3ª - 5ª con ascensor</span>
+                    </button>
+                    <button class="tf-option" data-value="3-5|false" onclick="selectOption(this, 'planta_ascensor', 10)">
+                        <span class="tf-option__label">3ª - 5ª sin ascensor</span>
+                    </button>
+                    <button class="tf-option" data-value="6+|true" onclick="selectOption(this, 'planta_ascensor', 10)">
+                        <span class="tf-option__label">6ª o superior con ascensor</span>
+                    </button>
+                    <button class="tf-option" data-value="6+|false" onclick="selectOption(this, 'planta_ascensor', 10)">
+                        <span class="tf-option__label">6ª o superior sin ascensor</span>
+                    </button>
+                    <button class="tf-option" data-value="atico|true" onclick="selectOption(this, 'planta_ascensor', 10)">
+                        <span class="tf-option__label">Ático con ascensor</span>
+                    </button>
+                    <button class="tf-option" data-value="atico|false" onclick="selectOption(this, 'planta_ascensor', 10)">
+                        <span class="tf-option__label">Ático sin ascensor</span>
+                    </button>
+                </div>
+                <div class="tf-nav">
+                    <button class="tf-btn tf-btn--ghost" onclick="prevStep(10)">← Atrás</button>
+                    <button class="tf-btn tf-btn--primary" onclick="nextStep(10)" id="btn-step-10">
+                        Siguiente <span class="tf-btn__key">↵</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 11 — Estado -->
+        <div class="tf-step" id="step-11">
+            <div class="tf-step__inner">
+                <div class="tf-step__num">11 →</div>
+                <h2 class="tf-step__titulo">¿En qué estado se encuentra?</h2>
+                <p class="tf-step__subtitulo">El estado de conservación es el factor con mayor impacto en el precio</p>
+                <div class="tf-options">
+                    <button class="tf-option" data-value="a_reformar" onclick="selectOption(this, 'estado', 11)">
+                        <span class="tf-option__icon">🔨</span>
+                        <span class="tf-option__label">A reformar</span>
+                        <span class="tf-option__desc">Necesita obras importantes</span>
+                    </button>
+                    <button class="tf-option" data-value="bueno" onclick="selectOption(this, 'estado', 11)">
+                        <span class="tf-option__icon">✅</span>
+                        <span class="tf-option__label">Bueno</span>
+                        <span class="tf-option__desc">En buen estado, habitable</span>
+                    </button>
+                    <button class="tf-option" data-value="muy_bueno" onclick="selectOption(this, 'estado', 11)">
+                        <span class="tf-option__icon">⭐</span>
+                        <span class="tf-option__label">Muy bueno</span>
+                        <span class="tf-option__desc">Reformado recientemente</span>
+                    </button>
+                    <button class="tf-option" data-value="a_estrenar" onclick="selectOption(this, 'estado', 11)">
+                        <span class="tf-option__icon">🏆</span>
+                        <span class="tf-option__label">A estrenar</span>
+                        <span class="tf-option__desc">Obra nueva o reforma total reciente</span>
+                    </button>
+                </div>
+                <div class="tf-nav">
+                    <button class="tf-btn tf-btn--ghost" onclick="prevStep(11)">← Atrás</button>
+                    <button class="tf-btn tf-btn--primary" onclick="nextStep(11)" id="btn-step-11">
+                        Siguiente <span class="tf-btn__key">↵</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 12 — Terraza -->
+        <div class="tf-step" id="step-12">
+            <div class="tf-step__inner">
+                <div class="tf-step__num">12 →</div>
+                <h2 class="tf-step__titulo">¿Tiene terraza o balcón?</h2>
+                <p class="tf-step__subtitulo">Los espacios exteriores añaden valor a la vivienda</p>
+                <div class="tf-options">
+                    <button class="tf-option" data-value="false|0" onclick="selectOption(this, 'terraza', 12)">
+                        <span class="tf-option__icon">🚫</span>
+                        <span class="tf-option__label">No tiene</span>
+                    </button>
+                    <button class="tf-option" data-value="true|3" onclick="selectOption(this, 'terraza', 12)">
+                        <span class="tf-option__icon">🌿</span>
+                        <span class="tf-option__label">Balcón pequeño</span>
+                        <span class="tf-option__desc">Menos de 5 m²</span>
+                    </button>
+                    <button class="tf-option" data-value="true|10" onclick="selectOption(this, 'terraza', 12)">
+                        <span class="tf-option__icon">🌳</span>
+                        <span class="tf-option__label">Terraza mediana</span>
+                        <span class="tf-option__desc">Entre 5 y 15 m²</span>
+                    </button>
+                    <button class="tf-option" data-value="true|22" onclick="selectOption(this, 'terraza', 12)">
+                        <span class="tf-option__icon">🌴</span>
+                        <span class="tf-option__label">Terraza grande</span>
+                        <span class="tf-option__desc">Entre 15 y 30 m²</span>
+                    </button>
+                    <button class="tf-option" data-value="true|35" onclick="selectOption(this, 'terraza', 12)">
+                        <span class="tf-option__icon">🏖️</span>
+                        <span class="tf-option__label">Terraza muy grande</span>
+                        <span class="tf-option__desc">Más de 30 m²</span>
+                    </button>
+                </div>
+                <div class="tf-nav">
+                    <button class="tf-btn tf-btn--ghost" onclick="prevStep(12)">← Atrás</button>
+                    <button class="tf-btn tf-btn--primary" onclick="nextStep(12)" id="btn-step-12">
+                        Siguiente <span class="tf-btn__key">↵</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 13 — Extras -->
+        <div class="tf-step" id="step-13">
+            <div class="tf-step__inner">
+                <div class="tf-step__num">13 →</div>
+                <h2 class="tf-step__titulo">¿Incluye parking o trastero?</h2>
+                <p class="tf-step__subtitulo">Estos extras tienen un valor fijo independiente del precio del piso</p>
+                <div class="tf-options">
+                    <button class="tf-option" data-value="false|false" onclick="selectOption(this, 'extras', 13)">
+                        <span class="tf-option__label">Ninguno</span>
+                    </button>
+                    <button class="tf-option" data-value="true|false" onclick="selectOption(this, 'extras', 13)">
+                        <span class="tf-option__icon">🚗</span>
+                        <span class="tf-option__label">Solo parking</span>
+                    </button>
+                    <button class="tf-option" data-value="false|true" onclick="selectOption(this, 'extras', 13)">
+                        <span class="tf-option__icon">📦</span>
+                        <span class="tf-option__label">Solo trastero</span>
+                    </button>
+                    <button class="tf-option" data-value="true|true" onclick="selectOption(this, 'extras', 13)">
+                        <span class="tf-option__icon">🚗📦</span>
+                        <span class="tf-option__label">Parking y trastero</span>
+                    </button>
+                </div>
+                <div class="tf-nav">
+                    <button class="tf-btn tf-btn--ghost" onclick="prevStep(13)">← Atrás</button>
+                    <button class="tf-btn tf-btn--primary" onclick="nextStep(13)" id="btn-step-13">
+                        Siguiente <span class="tf-btn__key">↵</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 14 — Tus datos -->
+        <div class="tf-step" id="step-14">
+            <div class="tf-step__inner">
+                <div class="tf-step__num">14 →</div>
                 <h2 class="tf-step__titulo">🎉 ¡Tu estimación está lista!</h2>
                 <p class="tf-step__subtitulo">Un último paso para ver el valor de tu vivienda.</p>
                 <div class="tf-form-lead">
@@ -343,8 +445,8 @@
                 </div>
 
                 <div class="tf-nav">
-                    <button class="tf-btn tf-btn--ghost" onclick="prevStep(10)">← Atrás</button>
-                    <button class="tf-btn tf-btn--primary" onclick="submitLead()" id="btn-step-10">
+                    <button class="tf-btn tf-btn--ghost" onclick="prevStep(14)">← Atrás</button>
+                    <button class="tf-btn tf-btn--primary" onclick="submitLead()" id="btn-step-14">
                         Ver mi estimación →
                     </button>
                 </div>
@@ -373,6 +475,5 @@
     <script src="js/typeform.js"></script>
     <script src="js/cookies.js"></script>
 
-    
 </body>
 </html>
