@@ -507,6 +507,38 @@ async function buscarCP(cp) {
     }
 }
 
+// ─── OVERLAY DE CARGA ─────────────────────────────────────────────────────────
+
+async function mostrarOverlayCarga() {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('tf-loading-overlay')
+        overlay.classList.add('visible')
+
+        const pasos = [
+            { id: 'loading-step-1', delay: 0,    duracion: 1200 },
+            { id: 'loading-step-2', delay: 1200, duracion: 1400 },
+            { id: 'loading-step-3', delay: 2600, duracion: 1100 },
+            { id: 'loading-step-4', delay: 3700, duracion: 1000 },
+        ]
+
+        pasos.forEach((paso) => {
+            setTimeout(() => {
+                document.getElementById(paso.id).classList.add('visible', 'active')
+            }, paso.delay)
+
+            setTimeout(() => {
+                document.getElementById(paso.id).classList.remove('active')
+                document.getElementById(paso.id).classList.add('done')
+            }, paso.delay + paso.duracion)
+        })
+
+        setTimeout(() => {
+            overlay.classList.add('fade-out')
+            setTimeout(() => resolve(), 600)
+        }, 4900)
+    })
+}
+
 // ─── SUBMIT LEAD ──────────────────────────────────────────────────────────────
 
 async function submitLead() {
@@ -577,9 +609,12 @@ async function submitLead() {
         created_at:            new Date().toISOString()
     }
 
-    const enviado = await guardarLead(lead)
-    if (!enviado) sessionStorage.setItem('supabase_error', 'true')
+    guardarLead(lead).then(enviado => {
+        if (!enviado) sessionStorage.setItem('supabase_error', 'true')
+    }).catch(() => {})
 
+    await mostrarOverlayCarga()
+    
     if (typeof fbq !== 'undefined') {
         fbq('track', 'Lead', {
             content_name: 'Valoracion Inmobiliaria',

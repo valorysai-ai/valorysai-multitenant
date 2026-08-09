@@ -398,6 +398,121 @@
     animation: spin 0.7s linear infinite;
 }
 
+/* ─── OVERLAY DE CARGA ───────────────────────────────────────────────────────── */
+
+.tf-loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--white);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+
+.tf-loading-overlay.visible {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.tf-loading-overlay.fade-out {
+    opacity: 0;
+    transition: opacity 0.6s ease;
+}
+
+.tf-loading__logo {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 64px;
+    opacity: 0.5;
+}
+
+.tf-loading__logo span {
+    color: var(--primary);
+}
+
+.tf-loading__steps {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 280px;
+}
+
+.tf-loading__step {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.tf-loading__step.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.tf-loading__dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.tf-loading__step.active .tf-loading__dot {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(16,185,129,0.15);
+}
+
+.tf-loading__step.active .tf-loading__dot::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    background: var(--primary);
+    border-radius: 50%;
+    animation: pulse 1s ease infinite;
+}
+
+.tf-loading__step.done .tf-loading__dot {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.tf-loading__step.done .tf-loading__dot::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 10px;
+    color: white;
+    font-weight: 700;
+}
+
+.tf-loading__text {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: color 0.3s ease;
+}
+
+.tf-loading__step.active .tf-loading__text {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.tf-loading__step.done .tf-loading__text {
+    color: var(--primary-dark);
+}
+
 /* ─── RESPONSIVE ─────────────────────────────────────────────────────────────── */
 
 @media (max-width: 480px) {
