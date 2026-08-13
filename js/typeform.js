@@ -217,7 +217,7 @@ function validarStep(step) {
             return true
         case 5:
             if (!datos.cp) {
-                mostrarError('Introduce una dirección válida para continuar')
+                mostrarError('Introduce una dirección o código postal válido')
                 return false
             }
             return true
@@ -397,7 +397,11 @@ function restaurarSeleccion(step) {
         case 5:
             if (datos.direccion) {
                 document.getElementById('tf-direccion').value = datos.direccion
-                buscarDireccion(datos.direccion)
+                if (/^\d{5}$/.test(datos.direccion)) {
+                    buscarPorCP(datos.direccion)
+                } else {
+                    buscarDireccion(datos.direccion)
+                }
             }
             break
         case 6:
@@ -462,7 +466,52 @@ function restaurarSeleccion(step) {
     }
 }
 
-// ─── BUSCAR DIRECCIÓN ─────────────────────────────────────────────────────────
+// ─── MAPA — BUSCAR POR CP ─────────────────────────────────────────────────────
+
+async function buscarPorCP(cp) {
+    try {
+        const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?postalcode=${cp}&country=ES&format=json&limit=1&addressdetails=1`
+        )
+        const data = await res.json()
+
+        if (data.length === 0) {
+            document.getElementById('tf-map-label').textContent = '❌ Código postal no encontrado'
+            datos.cp = null
+            return
+        }
+
+        const result = data[0]
+        const ciudad = result.address?.city || result.address?.town || result.address?.village || result.display_name.split(',')[0]
+
+        datos.cp = cp
+        datos.direccion = cp
+        document.getElementById('tf-map-label').textContent = `📍 ${ciudad} · CP ${cp}`
+        document.getElementById('tf-map').classList.add('visible')
+
+        if (!map) {
+            map = L.map('tf-map', { zoomControl: false, attributionControl: false })
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
+        }
+
+        map.setView([result.lat, result.lon], 13)
+
+        if (mapMarker) mapMarker.remove()
+        mapMarker = L.circleMarker([result.lat, result.lon], {
+            radius: 10,
+            fillColor: '#10b981',
+            color: '#059669',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.8
+        }).addTo(map)
+
+    } catch (e) {
+        console.error('Error buscando CP:', e)
+    }
+}
+
+// ─── MAPA — BUSCAR POR DIRECCIÓN ─────────────────────────────────────────────
 
 async function buscarDireccion(direccion) {
     if (direccion.length < 5) return
@@ -484,7 +533,7 @@ async function buscarDireccion(direccion) {
         const ciudad = result.address?.city || result.address?.town || result.address?.village || result.display_name.split(',')[0]
 
         if (!cp) {
-            document.getElementById('tf-map-label').textContent = '⚠️ No se encontró el código postal'
+            document.getElementById('tf-map-label').textContent = '⚠️ No se encontró el código postal — prueba añadiendo la ciudad'
             datos.cp = null
             return
         }
@@ -494,17 +543,15 @@ async function buscarDireccion(direccion) {
         document.getElementById('tf-map-label').textContent = `📍 ${ciudad} · CP ${cp}`
         document.getElementById('tf-map').classList.add('visible')
 
-        const { lat, lon } = result
-
         if (!map) {
             map = L.map('tf-map', { zoomControl: false, attributionControl: false })
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
         }
 
-        map.setView([lat, lon], 15)
+        map.setView([result.lat, result.lon], 15)
 
         if (mapMarker) mapMarker.remove()
-        mapMarker = L.circleMarker([lat, lon], {
+        mapMarker = L.circleMarker([result.lat, result.lon], {
             radius: 10,
             fillColor: '#10b981',
             color: '#059669',
@@ -602,8 +649,8 @@ async function submitLead() {
         nombre,
         email,
         telefono:              `${prefijo}${telefono.replace(/\s/g, '')}`,
-        direccion:             datos.direccion,
         cp:                    datos.cp,
+        direccion:             datos.direccion,
         superficie:            datos.superficie,
         habitaciones:          datos.habitaciones,
         banos:                 datos.banos,
@@ -667,11 +714,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let buscarTimeout = null
     document.getElementById('tf-direccion').addEventListener('input', e => {
-        const direccion = e.target.value.trim()
+        const valor = e.target.value.trim()
         datos.cp = null
         clearTimeout(buscarTimeout)
-        if (direccion.length >= 5) {
-            buscarTimeout = setTimeout(() => buscarDireccion(direccion), 600)
+        if (valor.length >= 3) {
+            buscarTimeout = setTimeout(() => {
+                if (/^\d{5}$/.test(valor)) {
+                    buscarPorCP(valor)
+                } else if (valor.length >= 5) {
+                    buscarDireccion(valor)
+                }
+            }, 600)
         }
     })
 })
