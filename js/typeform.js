@@ -11,6 +11,7 @@ const datos = {
     plazo_venta: null,
     valor_percibido: null,
     cp: null,
+    direccion: null,
     tipo_inmueble: null,
     superficie: null,
     habitaciones: null,
@@ -31,7 +32,7 @@ const STEP_NAMES = {
     2: 'Quiere Vender',
     3: 'Plazo Venta',
     4: 'Valor Percibido',
-    5: 'Codigo Postal',
+    5: 'Direccion',
     6: 'Tipo Inmueble',
     7: 'Superficie',
     8: 'Habitaciones',
@@ -215,8 +216,8 @@ function validarStep(step) {
             datos.valor_percibido = vp ? parseInt(vp) : null
             return true
         case 5:
-            if (!datos.cp || !/^\d{5}$/.test(datos.cp)) {
-                shakeInput('tf-cp', 'Introduce un código postal válido (5 dígitos)')
+            if (!datos.cp) {
+                mostrarError('Introduce una dirección válida para continuar')
                 return false
             }
             return true
@@ -394,9 +395,9 @@ function restaurarSeleccion(step) {
             }
             break
         case 5:
-            if (datos.cp) {
-                document.getElementById('tf-cp').value = datos.cp
-                buscarCP(datos.cp)
+            if (datos.direccion) {
+                document.getElementById('tf-direccion').value = datos.direccion
+                buscarDireccion(datos.direccion)
             }
             break
         case 6:
@@ -461,34 +462,46 @@ function restaurarSeleccion(step) {
     }
 }
 
-// ─── MAPA LEAFLET ─────────────────────────────────────────────────────────────
+// ─── BUSCAR DIRECCIÓN ─────────────────────────────────────────────────────────
 
-async function buscarCP(cp) {
-    if (cp.length !== 5) return
+async function buscarDireccion(direccion) {
+    if (direccion.length < 5) return
 
     try {
         const res = await fetch(
-            `https://nominatim.openstreetmap.org/search?postalcode=${cp}&country=ES&format=json&limit=1`
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(direccion)}&countrycodes=es&format=json&limit=1&addressdetails=1`
         )
         const data = await res.json()
 
         if (data.length === 0) {
-            document.getElementById('tf-map-label').textContent = ''
+            document.getElementById('tf-map-label').textContent = '❌ Dirección no encontrada'
+            datos.cp = null
             return
         }
 
-        const { lat, lon, display_name } = data[0]
-        const ciudad = display_name.split(',')[0]
+        const result = data[0]
+        const cp = result.address?.postcode
+        const ciudad = result.address?.city || result.address?.town || result.address?.village || result.display_name.split(',')[0]
 
-        document.getElementById('tf-map-label').textContent = `📍 ${ciudad}`
+        if (!cp) {
+            document.getElementById('tf-map-label').textContent = '⚠️ No se encontró el código postal'
+            datos.cp = null
+            return
+        }
+
+        datos.cp = cp
+        datos.direccion = direccion
+        document.getElementById('tf-map-label').textContent = `📍 ${ciudad} · CP ${cp}`
         document.getElementById('tf-map').classList.add('visible')
+
+        const { lat, lon } = result
 
         if (!map) {
             map = L.map('tf-map', { zoomControl: false, attributionControl: false })
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
         }
 
-        map.setView([lat, lon], 13)
+        map.setView([lat, lon], 15)
 
         if (mapMarker) mapMarker.remove()
         mapMarker = L.circleMarker([lat, lon], {
@@ -500,10 +513,8 @@ async function buscarCP(cp) {
             fillOpacity: 0.8
         }).addTo(map)
 
-        datos.cp = cp
-
     } catch (e) {
-        console.error('Error buscando CP:', e)
+        console.error('Error buscando dirección:', e)
     }
 }
 
@@ -591,6 +602,7 @@ async function submitLead() {
         nombre,
         email,
         telefono:              `${prefijo}${telefono.replace(/\s/g, '')}`,
+        direccion:             datos.direccion,
         cp:                    datos.cp,
         superficie:            datos.superficie,
         habitaciones:          datos.habitaciones,
@@ -620,7 +632,7 @@ async function submitLead() {
     }).catch(() => {})
 
     await mostrarOverlayCarga()
-    
+
     if (typeof fbq !== 'undefined') {
         fbq('track', 'Lead', {
             content_name: 'Valoracion Inmobiliaria',
@@ -653,9 +665,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('step-1').classList.add('active')
     actualizarProgreso(1)
 
-    document.getElementById('tf-cp').addEventListener('input', e => {
-        const cp = e.target.value.trim()
-        datos.cp = cp.length === 5 ? cp : null
-        if (cp.length === 5) buscarCP(cp)
+    let buscarTimeout = null
+    document.getElementById('tf-direccion').addEventListener('input', e => {
+        const direccion = e.target.value.trim()
+        datos.cp = null
+        clearTimeout(buscarTimeout)
+        if (direccion.length >= 5) {
+            buscarTimeout = setTimeout(() => buscarDireccion(direccion), 600)
+        }
     })
 })
