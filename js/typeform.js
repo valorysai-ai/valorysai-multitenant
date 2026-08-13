@@ -657,6 +657,7 @@ async function submitLead() {
         planta:                datos.planta,
         ascensor:              datos.ascensor,
         tiene_terraza:         datos.tieneTerraza,
+        m2_terraza:            datos.m2Terraza,
         tiene_parking:         datos.tieneParking,
         tipo_inmueble:         datos.tipo_inmueble === 14 ? 'Piso' : 'Casa',
         estado:                datos.estado,
