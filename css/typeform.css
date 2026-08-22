@@ -164,6 +164,9 @@
     background: transparent;
     outline: none;
     transition: border-color 0.2s;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 .tf-input:focus {
@@ -172,6 +175,11 @@
 
 .tf-input--lg {
     font-size: 2rem;
+    padding: 12px 4px;
+}
+
+.tf-input--cp {
+    font-size: 1.3rem;
     padding: 12px 4px;
 }
 

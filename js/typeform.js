@@ -565,6 +565,70 @@ async function buscarDireccion(direccion) {
     }
 }
 
+// ─── MAPA — BÚSQUEDA COMBINADA (CP + CALLE) ──────────────────────────────────
+
+async function buscarCombinado(direccion, cp) {
+    try {
+        // Paso 1: geocodificar el CP para obtener su área
+        const resCp = await fetch(
+            `https://nominatim.openstreetmap.org/search?postalcode=${cp}&country=ES&format=json&limit=1&addressdetails=1`
+        )
+        const dataCp = await resCp.json()
+
+        if (dataCp.length === 0) {
+            document.getElementById('tf-map-label').textContent = '❌ Código postal no encontrado'
+            datos.cp = null
+            return
+        }
+
+        const areaCp = dataCp[0]
+        const margen = 0.05 // grados aprox. — acota la búsqueda al entorno del CP
+        const viewbox = [
+            parseFloat(areaCp.lon) - margen,
+            parseFloat(areaCp.lat) + margen,
+            parseFloat(areaCp.lon) + margen,
+            parseFloat(areaCp.lat) - margen
+        ].join(',')
+
+        // Paso 2: buscar la calle SOLO dentro de esa área
+        const resCalle = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(direccion)}&viewbox=${viewbox}&bounded=1&countrycodes=es&format=json&limit=1&addressdetails=1`
+        )
+        const dataCalle = await resCalle.json()
+
+        // Si no encuentra la calle dentro del CP, mostramos al menos el CP
+        const result = dataCalle.length > 0 ? dataCalle[0] : areaCp
+        const ciudad = result.address?.city || result.address?.town || result.address?.village || result.display_name.split(',')[0]
+
+        datos.cp = cp
+        datos.direccion = direccion
+        document.getElementById('tf-map-label').textContent = dataCalle.length > 0
+            ? `📍 ${ciudad} · CP ${cp}`
+            : `📍 ${ciudad} · CP ${cp} (calle no localizada exactamente)`
+        document.getElementById('tf-map').classList.add('visible')
+
+        if (!map) {
+            map = L.map('tf-map', { zoomControl: false, attributionControl: false })
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
+        }
+
+        map.setView([result.lat, result.lon], dataCalle.length > 0 ? 16 : 14)
+
+        if (mapMarker) mapMarker.remove()
+        mapMarker = L.circleMarker([result.lat, result.lon], {
+            radius: 10,
+            fillColor: '#10b981',
+            color: '#059669',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.8
+        }).addTo(map)
+
+    } catch (e) {
+        console.error('Error buscando dirección combinada:', e)
+    }
+}
+
 // ─── OVERLAY DE CARGA ─────────────────────────────────────────────────────────
 
 async function mostrarOverlayCarga() {
@@ -645,6 +709,10 @@ async function submitLead() {
     btn.classList.add('tf-btn--loading')
     btn.disabled = true
 
+    // ─── NUEVO: event_id único para deduplicación Browser ↔ Server (Meta CAPI) ───
+    const eventId  = crypto.randomUUID()
+    const tracking = getTrackingParams()
+
     const lead = {
         nombre,
         email,
@@ -672,8 +740,72 @@ async function submitLead() {
         plazo_venta:           datos.plazo_venta,
         valor_percibido:       datos.valor_percibido,
         tipo_lead:             calcularTipoLead(),
-        created_at:            new Date().toISOString()
+        created_at:            new Date().toISOString(),
+        // ─── NUEVO: datos para Meta Conversions API ───────────────────────────
+        event_id:              eventId,
+        event_source_url:      window.location.href,
+        fbc:                   getFbc(),
+        fbp:                   getFbp(),
+        fbclid:                tracking.fbclid,
+        utm_source:            tracking.utm_source,
+        utm_medium:            tracking.utm_medium,
+        utm_campaign:          tracking.utm_campaign,
+        utm_content:           tracking.utm_content,
+        utm_term:              tracking.utm_term,
     }
+
+    // ─── NUEVO: payload y envío a GoHighLevel ─────────────────────────────────
+    const payloadGHL = {
+        nombre,
+        email,
+        telefono:                 lead.telefono,
+        tipo_lead:                calcularTipoLead(),
+        agente:                   lead.agente,
+
+        cp:                       datos.cp,
+        direccion:                datos.direccion,
+        tipo_inmueble:            lead.tipo_inmueble,
+        superficie:               datos.superficie,
+        habitaciones:             datos.habitaciones,
+        banos:                    datos.banos,
+        planta:                   datos.planta,
+        ascensor:                 datos.ascensor,
+        estado:                   datos.estado,
+        tiene_terraza:            datos.tieneTerraza,
+        m2_terraza:               datos.m2Terraza,
+        tiene_parking:            datos.tieneParking,
+        tiene_trastero:           datos.tieneTrastero,
+
+        es_propietario:           datos.es_propietario,
+        quiere_vender:            datos.quiere_vender,
+        plazo_venta:              datos.plazo_venta,
+        valor_percibido:          datos.valor_percibido,
+        precio_estimado_bajo:     resultado.rangoBajo,
+        precio_estimado_alto:     resultado.rangoAlto,
+
+        consentimiento:           rgpd ? 'si' : 'no',
+        consentimiento_marketing: rgpd_marketing ? 'si' : 'no',
+        consentimiento_fecha:     new Date().toISOString(),
+
+        utm_source:               tracking.utm_source || '',
+        utm_medium:               tracking.utm_medium || '',
+        utm_campaign:             tracking.utm_campaign || '',
+        utm_content:              tracking.utm_content || '',
+        utm_term:                 tracking.utm_term || '',
+        fbclid:                   tracking.fbclid || '',
+        fbp:                      getFbp() || '',
+        gclid:                    tracking.gclid || '',
+        page_url:                 window.location.href,
+        landing_path:             window.location.pathname,
+        referrer:                 tracking.referrer || '',
+        user_agent:               navigator.userAgent,
+        screen_resolution:        `${window.screen.width}x${window.screen.height}`,
+        language:                 navigator.language,
+        timestamp_landing:        tracking.captured_at ? new Date(tracking.captured_at).toISOString() : null,
+        timestamp_submit:         new Date().toISOString(),
+    }
+
+    enviarGHL(payloadGHL).catch(() => {})
 
     guardarLead(lead).then(enviado => {
         if (!enviado) sessionStorage.setItem('supabase_error', 'true')
@@ -687,7 +819,7 @@ async function submitLead() {
             content_category: datos.tipo_inmueble === 14 ? 'Piso' : 'Casa',
             value: resultado.valorCentral,
             currency: 'EUR'
-        })
+        }, { eventID: eventId })
     }
 
     window.location.href = 'resultado.html'
@@ -714,18 +846,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     actualizarProgreso(1)
 
     let buscarTimeout = null
-    document.getElementById('tf-direccion').addEventListener('input', e => {
-        const valor = e.target.value.trim()
+
+    function dispararBusqueda() {
+        const direccion = document.getElementById('tf-direccion').value.trim()
+        const cp        = document.getElementById('tf-cp-manual').value.trim()
+        const cpValido  = /^\d{5}$/.test(cp)
+
         datos.cp = null
         clearTimeout(buscarTimeout)
-        if (valor.length >= 3) {
-            buscarTimeout = setTimeout(() => {
-                if (/^\d{5}$/.test(valor)) {
-                    buscarPorCP(valor)
-                } else if (valor.length >= 5) {
-                    buscarDireccion(valor)
-                }
-            }, 600)
-        }
-    })
+
+        buscarTimeout = setTimeout(() => {
+            if (cpValido && direccion.length >= 3) {
+                buscarCombinado(direccion, cp)               // ambos → búsqueda combinada, CP primero
+            } else if (cpValido) {
+                buscarPorCP(cp)                               // solo CP
+            } else if (/^\d{5}$/.test(direccion)) {
+                buscarPorCP(direccion)                        // CP escrito en el campo de dirección
+            } else if (direccion.length >= 5) {
+                buscarDireccion(direccion)                    // solo dirección libre
+            }
+        }, 600)
+    }
+
+    document.getElementById('tf-direccion').addEventListener('input', dispararBusqueda)
+    document.getElementById('tf-cp-manual').addEventListener('input', dispararBusqueda)
 })

@@ -134,9 +134,10 @@
             <div class="tf-step__inner">
                 <div class="tf-step__num">05 →</div>
                 <h2 class="tf-step__titulo">¿Cuál es la dirección de tu vivienda?</h2>
-                <p class="tf-step__subtitulo">Escribe la calle y número para localizarla en el mapa</p>
+                <p class="tf-step__subtitulo">Escribe la dirección o introduce directamente el código postal</p>
                 <div class="tf-cp-wrapper">
-                    <input class="tf-input tf-input--lg" type="text" id="tf-direccion" placeholder="Calle Mayor 10, Madrid o 08191" autocomplete="off">
+                    <input class="tf-input tf-input--lg" type="text" id="tf-direccion" placeholder="Passeig de Gràcia 45" autocomplete="off">
+                    <input class="tf-input tf-input--cp" type="text" id="tf-cp-manual" placeholder="Código postal (ej: 08029)" maxlength="5" autocomplete="off" style="margin-top:8px;max-width:350px">
                     <div class="tf-map" id="tf-map"></div>
                     <div class="tf-map__label" id="tf-map-label"></div>
                 </div>
@@ -493,8 +494,10 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/tracking.js"></script>
     <script src="js/algoritmo.js"></script>
     <script src="js/supabase.js"></script>
+    <script src="js/ghl.js"></script>
     <script src="js/typeform.js"></script>
     <script src="js/cookies.js"></script>
 

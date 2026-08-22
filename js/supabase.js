@@ -85,7 +85,7 @@ async function reenviarLeadPendiente() {
 
 async function enviarMetaConversion(lead) {
     try {
-        const SUPABASE_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1/meta-conversions`
+        const SUPABASE_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1/clever-task`
 
         await fetch(SUPABASE_FUNCTIONS_URL, {
             method: 'POST',
@@ -98,7 +98,13 @@ async function enviarMetaConversion(lead) {
                 telefono:             lead.telefono,
                 nombre:               lead.nombre,
                 precio_estimado_bajo: lead.precio_estimado_bajo,
-                precio_estimado_alto: lead.precio_estimado_alto
+                precio_estimado_alto: lead.precio_estimado_alto,
+                // ─── NUEVO: para deduplicación y mejor Event Match Quality ───
+                event_id:             lead.event_id,
+                event_source_url:     lead.event_source_url,
+                fbc:                  lead.fbc,
+                fbp:                  lead.fbp,
+                user_agent:           navigator.userAgent
             })
         })
     } catch (e) {
