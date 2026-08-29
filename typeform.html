@@ -445,10 +445,10 @@
                     <input type="text" id="tf-honeypot" name="website" tabindex="-1" autocomplete="off">
                 </div>
 
-                <div class="tf-nav">
+                <div class="tf-nav" id="tf-nav-datos">
                     <button class="tf-btn tf-btn--ghost" onclick="prevStep(14)">← Atrás</button>
-                    <button class="tf-btn tf-btn--primary" onclick="submitLead()" id="btn-step-14">
-                        Ver mi estimación →
+                    <button class="tf-btn tf-btn--primary" onclick="iniciarVerificacion()" id="btn-step-14">
+                        Verificar mi teléfono →
                     </button>
                 </div>
             </div>
@@ -475,6 +475,33 @@
             <div class="tf-loading__step" id="loading-step-4">
                 <div class="tf-loading__dot"></div>
                 <span class="tf-loading__text">Generando tu estimación personalizada</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- OVERLAY OTP — pantalla completa, fuera del main, mismo patrón que tf-loading-overlay -->
+    <div class="tf-otp-overlay" id="tf-otp-overlay">
+        <div class="tf-otp__logo">Iván López <span>· Asesor Inmobiliario</span></div>
+        <div class="tf-otp__inner">
+            <div class="tf-otp__icono">🔓</div>
+            <h2 class="tf-otp__titulo">¡Tu valoración está lista!</h2>
+            <p class="tf-otp__subtitulo">Si quieres desbloquearla, confirma tu teléfono con el código de 6 dígitos que te hemos enviado por SMS</p>
+            <div class="tf-otp__digits" id="tf-otp-digits">
+                <input class="tf-otp__digit" type="text" inputmode="numeric" maxlength="1" data-index="0" autocomplete="one-time-code">
+                <input class="tf-otp__digit" type="text" inputmode="numeric" maxlength="1" data-index="1">
+                <input class="tf-otp__digit" type="text" inputmode="numeric" maxlength="1" data-index="2">
+                <input class="tf-otp__digit" type="text" inputmode="numeric" maxlength="1" data-index="3">
+                <input class="tf-otp__digit" type="text" inputmode="numeric" maxlength="1" data-index="4">
+                <input class="tf-otp__digit" type="text" inputmode="numeric" maxlength="1" data-index="5">
+            </div>
+            <p class="tf-otp__error" id="tf-otp-error" style="display:none"></p>
+            <div class="tf-otp__acciones">
+                <button class="tf-btn tf-btn--primary" onclick="confirmarOtp()" id="btn-confirmar-otp">
+                    Desbloquear mi valoración →
+                </button>
+                <p class="tf-otp__reenvio">
+                    ¿No te ha llegado? <a href="#" onclick="reenviarOtp(); return false" id="link-reenviar-otp">Reenviar código</a>
+                </p>
             </div>
         </div>
     </div>

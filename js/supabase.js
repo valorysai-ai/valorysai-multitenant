@@ -111,3 +111,24 @@ async function enviarMetaConversion(lead) {
         console.warn('Meta Conversions API error:', e)
     }
 }
+
+// ─── MARCAR TELÉFONO VERIFICADO (tras OTP correcto) ───────────────────────────
+
+async function marcarTelefonoVerificado(eventId) {
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/leads?event_id=eq.${eventId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({ telefono_verificado: true })
+        })
+        return response.ok
+    } catch (e) {
+        console.warn('Error marcando teléfono verificado:', e)
+        return false
+    }
+}

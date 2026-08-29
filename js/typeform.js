@@ -5,6 +5,12 @@ let currentStep = 1
 let map = null
 let mapMarker = null
 
+// ─── OTP · MODO DESARROLLO ──────────────────────────────────────────────────────
+// Mientras esté en true, send-otp/verify-otp se SIMULAN en el navegador (sin
+// llamar a Twilio, sin gastar SMS). El código válido en modo dev es "123456".
+// Cambiar a false solo cuando ya se haya validado todo el flujo visualmente.
+const DEV_MODE_OTP = false
+
 const datos = {
     es_propietario: null,
     quiere_vender: null,
@@ -23,6 +29,17 @@ const datos = {
     m2Terraza: null,
     tieneParking: null,
     tieneTrastero: null,
+}
+
+// Estado de la verificación OTP — se rellena en iniciarVerificacion()
+const otpState = {
+    telefono: null,
+    prefijo: null,
+    resultado: null,
+    eventId: null,
+    tipoInmueble: null,
+    reenviosUsados: 0,
+    cooldownActivo: false,
 }
 
 let precios = null
@@ -306,6 +323,83 @@ function mostrarError(mensaje) {
     if (activeStep) activeStep.before(err)
 
     setTimeout(() => err.remove(), 3000)
+}
+
+// Igual que mostrarError(), pero para el overlay OTP — que ya no vive dentro
+// de un .tf-step, así que mostrarError() no lo encontraría (quedaría oculto detrás).
+function mostrarErrorOtp(mensaje) {
+    const err = document.getElementById('tf-otp-error')
+    err.textContent = '⚠️ ' + mensaje
+    err.style.display = 'block'
+    err.style.color = '#ef4444'
+    err.style.fontSize = '14px'
+    err.style.marginTop = '12px'
+
+    clearTimeout(mostrarErrorOtp._timeout)
+    mostrarErrorOtp._timeout = setTimeout(() => {
+        err.style.display = 'none'
+    }, 3000)
+}
+
+// ─── OTP · CAJAS DE DÍGITOS ─────────────────────────────────────────────────────
+// 6 inputs individuales con auto-avance, borrado hacia atrás, pegado del
+// código completo, y confirmación automática al rellenar la última caja.
+
+function obtenerCodigoOtp() {
+    return Array.from(document.querySelectorAll('.tf-otp__digit'))
+        .map(el => el.value)
+        .join('')
+}
+
+function limpiarCodigoOtp() {
+    const cajas = document.querySelectorAll('.tf-otp__digit')
+    cajas.forEach(el => { el.value = ''; el.classList.remove('filled') })
+    if (cajas[0]) cajas[0].focus()
+}
+
+function inicializarCajasOtp() {
+    const cajas = Array.from(document.querySelectorAll('.tf-otp__digit'))
+    if (cajas.length === 0) return
+
+    cajas.forEach((caja, i) => {
+        caja.addEventListener('input', () => {
+            caja.value = caja.value.replace(/[^0-9]/g, '').slice(0, 1)
+            caja.classList.toggle('filled', caja.value !== '')
+
+            if (caja.value && i < cajas.length - 1) {
+                cajas[i + 1].focus()
+            }
+
+            if (cajas.every(c => c.value)) {
+                confirmarOtp()
+            }
+        })
+
+        caja.addEventListener('keydown', e => {
+            if (e.key === 'Backspace' && !caja.value && i > 0) {
+                cajas[i - 1].value = ''
+                cajas[i - 1].classList.remove('filled')
+                cajas[i - 1].focus()
+            }
+        })
+
+        caja.addEventListener('paste', e => {
+            e.preventDefault()
+            const texto = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '')
+
+            texto.split('').slice(0, cajas.length).forEach((digito, idx) => {
+                cajas[idx].value = digito
+                cajas[idx].classList.add('filled')
+            })
+
+            const siguienteVacia = cajas.find(c => !c.value)
+            ;(siguienteVacia || cajas[cajas.length - 1]).focus()
+
+            if (cajas.every(c => c.value)) {
+                confirmarOtp()
+            }
+        })
+    })
 }
 
 // ─── SELECCIÓN DE OPCIONES ────────────────────────────────────────────────────
@@ -661,9 +755,56 @@ async function mostrarOverlayCarga() {
     })
 }
 
-// ─── SUBMIT LEAD ──────────────────────────────────────────────────────────────
+// ─── OTP · TWILIO VERIFY ────────────────────────────────────────────────────────
+// Ambas Edge Functions siempre responden status 200; el resultado real va
+// dentro del JSON (success/valid). En DEV_MODE_OTP se simula todo sin llamar
+// a Twilio — el código válido en modo dev es "123456".
 
-async function submitLead() {
+async function llamarSendOtp(telefono, prefijo) {
+    if (DEV_MODE_OTP) {
+        console.log('[DEV_MODE_OTP] Simulando envío de SMS a', prefijo + telefono, '— usa el código 123456')
+        await new Promise(resolve => setTimeout(resolve, 500))
+        return { success: true }
+    }
+
+    try {
+        const res = await fetch('https://aoauaprfomyzssovoebf.supabase.co/functions/v1/send-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ telefono, prefijo })
+        })
+        return await res.json()
+    } catch (e) {
+        return { success: false, error: e.message }
+    }
+}
+
+async function llamarVerifyOtp(telefono, prefijo, codigo) {
+    if (DEV_MODE_OTP) {
+        console.log('[DEV_MODE_OTP] Simulando verificación con código', codigo)
+        await new Promise(resolve => setTimeout(resolve, 500))
+        return { valid: codigo === '123456' }
+    }
+
+    try {
+        const res = await fetch('https://aoauaprfomyzssovoebf.supabase.co/functions/v1/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ telefono, prefijo, codigo })
+        })
+        return await res.json()
+    } catch (e) {
+        return { valid: false, error: e.message }
+    }
+}
+
+// ─── INICIAR VERIFICACIÓN (antes: submitLead) ─────────────────────────────────
+// Valida el formulario, calcula la estimación, GUARDA el lead (Supabase + GHL
+// + Meta CAPI) de inmediato — pase lo que pase con el OTP después — y envía
+// el SMS de verificación. La estimación NO se muestra hasta que el código
+// sea correcto en confirmarOtp().
+
+async function iniciarVerificacion() {
     if (document.getElementById('tf-honeypot').value) {
         window.location.href = 'resultado.html'
         return
@@ -709,7 +850,7 @@ async function submitLead() {
     btn.classList.add('tf-btn--loading')
     btn.disabled = true
 
-    // ─── NUEVO: event_id único para deduplicación Browser ↔ Server (Meta CAPI) ───
+    // ─── event_id único para deduplicación Browser ↔ Server (Meta CAPI) ─────────
     const eventId  = crypto.randomUUID()
     const tracking = getTrackingParams()
 
@@ -741,7 +882,8 @@ async function submitLead() {
         valor_percibido:       datos.valor_percibido,
         tipo_lead:             calcularTipoLead(),
         created_at:            new Date().toISOString(),
-        // ─── NUEVO: datos para Meta Conversions API ───────────────────────────
+        telefono_verificado:   false,
+        // ─── datos para Meta Conversions API ──────────────────────────────────
         event_id:              eventId,
         event_source_url:      window.location.href,
         fbc:                   getFbc(),
@@ -754,7 +896,7 @@ async function submitLead() {
         utm_term:              tracking.utm_term,
     }
 
-    // ─── NUEVO: payload y envío a GoHighLevel ─────────────────────────────────
+    // ─── payload y envío a GoHighLevel ────────────────────────────────────────
     const payloadGHL = {
         nombre,
         email,
@@ -805,24 +947,147 @@ async function submitLead() {
         timestamp_submit:         new Date().toISOString(),
     }
 
+    // El lead se guarda SIEMPRE en este punto — verifique o no el OTP después.
+    // Se ESPERA (await) a que termine antes de continuar: si no, podríamos llegar
+    // a la pantalla del OTP sin que la fila exista aún en Supabase, y el PATCH
+    // de marcarTelefonoVerificado() fallaría al no encontrar ninguna fila que
+    // coincida con el event_id.
     enviarGHL(payloadGHL).catch(() => {})
 
-    guardarLead(lead).then(enviado => {
-        if (!enviado) sessionStorage.setItem('supabase_error', 'true')
-    }).catch(() => {})
+    // Guardamos lo necesario para la verificación y para el evento Meta posterior
+    otpState.telefono     = telefono.replace(/\s/g, '')
+    otpState.prefijo      = prefijo
+    otpState.resultado    = resultado
+    otpState.eventId      = eventId
+    otpState.tipoInmueble = datos.tipo_inmueble
 
-    await mostrarOverlayCarga()
+    // El overlay de carga, el envío del SMS y el guardado en Supabase ocurren EN
+    // PARALELO — el usuario ve la animación de "analizando tu vivienda" mientras
+    // el SMS viaja y el lead se guarda de fondo, pero no avanzamos hasta que los
+    // tres hayan terminado.
+    const [, envio, leadGuardado] = await Promise.all([
+        mostrarOverlayCarga(),
+        llamarSendOtp(otpState.telefono, otpState.prefijo),
+        guardarLead(lead)
+    ])
+
+    if (!leadGuardado) sessionStorage.setItem('supabase_error', 'true')
+
+    // Reset del overlay de carga — ya no navegamos fuera de la página, así que
+    // hay que ocultarlo explícitamente para dejar paso a la pantalla del OTP.
+    const overlayCarga = document.getElementById('tf-loading-overlay')
+    overlayCarga.classList.remove('visible', 'fade-out')
+    document.querySelectorAll('.tf-loading__step').forEach(el => {
+        el.classList.remove('visible', 'active', 'done')
+    })
+
+    btn.classList.remove('tf-btn--loading')
+
+    if (!envio.success) {
+        btn.disabled = false
+        mostrarError('No hemos podido enviar el SMS. Revisa el número e inténtalo de nuevo.')
+        return
+    }
+
+    document.getElementById('tf-otp-overlay').classList.add('visible')
+    setTimeout(() => {
+        const primeraCaja = document.querySelector('.tf-otp__digit[data-index="0"]')
+        if (primeraCaja) primeraCaja.focus()
+    }, 100)
+}
+
+// ─── CONFIRMAR CÓDIGO OTP ──────────────────────────────────────────────────────
+// Solo si el código es correcto se marca el lead como verificado y se dispara
+// el evento Lead del Pixel antes de redirigir. El overlay de carga ya se
+// mostró antes (en iniciarVerificacion), así que no se repite aquí.
+
+async function confirmarOtp() {
+    const codigo = obtenerCodigoOtp()
+
+    if (!/^\d{6}$/.test(codigo)) {
+        mostrarErrorOtp('Introduce el código de 6 dígitos')
+        return
+    }
+
+    const btn = document.getElementById('btn-confirmar-otp')
+    btn.classList.add('tf-btn--loading')
+    btn.disabled = true
+
+    const verificacion = await llamarVerifyOtp(otpState.telefono, otpState.prefijo, codigo)
+
+    btn.classList.remove('tf-btn--loading')
+    btn.disabled = false
+
+    if (!verificacion.valid) {
+        mostrarErrorOtp('Código incorrecto. Revísalo o pide uno nuevo.')
+        limpiarCodigoOtp()
+        return
+    }
+
+    marcarTelefonoVerificado(otpState.eventId).catch(() => {})
 
     if (typeof fbq !== 'undefined') {
         fbq('track', 'Lead', {
             content_name: 'Valoracion Inmobiliaria',
-            content_category: datos.tipo_inmueble === 14 ? 'Piso' : 'Casa',
-            value: resultado.valorCentral,
+            content_category: otpState.tipoInmueble === 14 ? 'Piso' : 'Casa',
+            value: otpState.resultado.valorCentral,
             currency: 'EUR'
-        }, { eventID: eventId })
+        }, { eventID: otpState.eventId })
     }
 
     window.location.href = 'resultado.html'
+}
+
+// ─── REENVIAR CÓDIGO OTP (máximo 2 veces, con cooldown de 30s) ────────────────
+
+async function reenviarOtp() {
+    if (otpState.cooldownActivo) return
+
+    if (otpState.reenviosUsados >= 2) {
+        mostrarErrorOtp('Has alcanzado el máximo de reenvíos. Recarga la página para volver a intentarlo.')
+        return
+    }
+
+    const link = document.getElementById('link-reenviar-otp')
+    otpState.cooldownActivo = true
+    otpState.reenviosUsados++
+
+    const envio = await llamarSendOtp(otpState.telefono, otpState.prefijo)
+
+    if (!envio.success) {
+        mostrarErrorOtp('No hemos podido reenviar el código. Inténtalo en unos segundos.')
+    } else {
+        limpiarCodigoOtp()
+    }
+
+    let segundos = 30
+    link.style.pointerEvents = 'none'
+    link.style.opacity = '0.5'
+
+    const actualizarTexto = () => {
+        link.textContent = `Reenviar código (${segundos}s)`
+    }
+    actualizarTexto()
+
+    const intervalo = setInterval(() => {
+        segundos--
+        actualizarTexto()
+
+        if (segundos <= 0) {
+            clearInterval(intervalo)
+            otpState.cooldownActivo = false
+            link.style.pointerEvents = 'auto'
+            link.style.opacity = '1'
+
+            if (otpState.reenviosUsados >= 2) {
+                link.textContent = 'Sin reenvíos disponibles'
+                link.style.pointerEvents = 'none'
+                link.style.opacity = '0.5'
+            } else {
+                link.textContent = 'Reenviar código'
+            }
+        }
+    }, 1000)
 }
 
 // ─── TECLADO ──────────────────────────────────────────────────────────────────
@@ -844,6 +1109,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('step-1').classList.add('active')
     actualizarProgreso(1)
+
+    inicializarCajasOtp()
 
     let buscarTimeout = null
 
