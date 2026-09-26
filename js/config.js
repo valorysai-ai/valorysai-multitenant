@@ -35,3 +35,22 @@ window.CONFIG_READY = (async () => {
         return null
     }
 })()
+
+// ─── APLICAR CONFIG AL DOM ──────────────────────────────────────────────────
+// Espera a que window.CONFIG esté listo y rellena los elementos que dependen
+// del agente actual. Se ejecuta en todas las páginas que carguen config.js.
+
+window.CONFIG_READY.then((config) => {
+    if (!config) return // sin agente encontrado — dejamos el texto por defecto
+
+    document.querySelectorAll('[id^="header-logo"]').forEach(el => {
+        el.textContent = config.nombre
+    })
+    document.querySelectorAll('[id^="footer-titulo"]').forEach(el => {
+        el.textContent = config.nombre
+    })
+
+    if (config.color_primario) {
+        document.documentElement.style.setProperty('--primary', config.color_primario)
+    }
+})
