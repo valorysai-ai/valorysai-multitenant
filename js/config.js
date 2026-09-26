@@ -53,4 +53,14 @@ window.CONFIG_READY.then((config) => {
     if (config.color_primario) {
         document.documentElement.style.setProperty('--primary', config.color_primario)
     }
+
+    // Título de la pestaña del navegador
+    document.title = `¿Cuánto vale tu vivienda? — Calculadora gratuita · ${config.nombre}`
+
+    // Email de contacto del footer
+    const emailEl = document.getElementById('footer-email')
+    if (emailEl && config.email) {
+        emailEl.textContent = config.email
+        emailEl.href = `mailto:${config.email}`
+    }
 })
