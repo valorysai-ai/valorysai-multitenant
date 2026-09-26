@@ -63,4 +63,8 @@ window.CONFIG_READY.then((config) => {
         emailEl.textContent = config.email
         emailEl.href = `mailto:${config.email}`
     }
+
+    // Nombre del agente en el copyright del footer
+    const copyrightNombreEl = document.getElementById('footer-copyright-nombre')
+    if (copyrightNombreEl) copyrightNombreEl.textContent = config.nombre
 })
