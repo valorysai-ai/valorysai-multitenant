@@ -357,13 +357,41 @@ function limpiarCodigoOtp() {
     if (cajas[0]) cajas[0].focus()
 }
 
+function rellenarCajasDesde(cajas, texto) {
+    const digitos = texto.replace(/[^0-9]/g, '')
+
+    digitos.split('').slice(0, cajas.length).forEach((digito, idx) => {
+        cajas[idx].value = digito
+        cajas[idx].classList.add('filled')
+    })
+
+    const siguienteVacia = cajas.find(c => !c.value)
+    ;(siguienteVacia || cajas[cajas.length - 1]).focus()
+
+    if (cajas.every(c => c.value)) {
+        confirmarOtp()
+    }
+}
+
 function inicializarCajasOtp() {
     const cajas = Array.from(document.querySelectorAll('.tf-otp__digit'))
     if (cajas.length === 0) return
 
     cajas.forEach((caja, i) => {
         caja.addEventListener('input', () => {
-            caja.value = caja.value.replace(/[^0-9]/g, '').slice(0, 1)
+            const limpio = caja.value.replace(/[^0-9]/g, '')
+
+            // El autofill del SMS en móvil (banner sobre el teclado) suele meter
+            // el código completo de golpe en la primera caja, sin disparar un
+            // evento "paste" — lo detectamos aquí por tener más de 1 dígito.
+            if (limpio.length > 1) {
+                caja.value = ''
+                caja.classList.remove('filled')
+                rellenarCajasDesde(cajas, limpio)
+                return
+            }
+
+            caja.value = limpio.slice(0, 1)
             caja.classList.toggle('filled', caja.value !== '')
 
             if (caja.value && i < cajas.length - 1) {
@@ -385,19 +413,8 @@ function inicializarCajasOtp() {
 
         caja.addEventListener('paste', e => {
             e.preventDefault()
-            const texto = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '')
-
-            texto.split('').slice(0, cajas.length).forEach((digito, idx) => {
-                cajas[idx].value = digito
-                cajas[idx].classList.add('filled')
-            })
-
-            const siguienteVacia = cajas.find(c => !c.value)
-            ;(siguienteVacia || cajas[cajas.length - 1]).focus()
-
-            if (cajas.every(c => c.value)) {
-                confirmarOtp()
-            }
+            const texto = (e.clipboardData || window.clipboardData).getData('text')
+            rellenarCajasDesde(cajas, texto)
         })
     })
 }
@@ -854,6 +871,10 @@ async function iniciarVerificacion() {
     const eventId  = crypto.randomUUID()
     const tracking = getTrackingParams()
 
+    // Esperamos a que window.CONFIG esté listo — nunca leemos CONFIG directamente,
+    // porque podría no haberse resuelto todavía si el usuario fue muy rápido.
+    const config = await window.CONFIG_READY
+
     const lead = {
         nombre,
         email,
@@ -875,7 +896,8 @@ async function iniciarVerificacion() {
         nivel_dato:            resultado.nivel,
         rgpd:                  true,
         rgpd_marketing,
-        agente:                new URLSearchParams(window.location.search).get('agente') || 'ivan-lopez-safti',
+        agente:                config?.nombre || 'sin-agente',
+        agente_id:              config?.id || null,
         es_propietario:        datos.es_propietario,
         quiere_vender:         datos.quiere_vender,
         plazo_venta:           datos.plazo_venta,
@@ -997,9 +1019,9 @@ async function iniciarVerificacion() {
 }
 
 // ─── CONFIRMAR CÓDIGO OTP ──────────────────────────────────────────────────────
-// Solo si el código es correcto se marca el lead como verificado y se dispara
-// el evento Lead del Pixel antes de redirigir. El overlay de carga ya se
-// mostró antes (en iniciarVerificacion), así que no se repite aquí.
+// Solo si el código es correcto se marca el lead como verificado, se dispara
+// el evento Lead del Pixel, y se redirige. El overlay de carga ya se mostró
+// antes (en iniciarVerificacion), así que no se repite aquí.
 
 async function confirmarOtp() {
     const codigo = obtenerCodigoOtp()
@@ -1024,7 +1046,11 @@ async function confirmarOtp() {
         return
     }
 
-    marcarTelefonoVerificado(otpState.eventId).catch(() => {})
+    // Se ESPERA a que termine antes de navegar — si no, el cambio de página
+    // cancela la petición a medias (el navegador aborta cualquier fetch en
+    // marcha al desconectarse de la página actual), y aunque Twilio confirme
+    // el código como válido, la columna se quedaría en false por la carrera.
+    await marcarTelefonoVerificado(otpState.eventId)
 
     if (typeof fbq !== 'undefined') {
         fbq('track', 'Lead', {

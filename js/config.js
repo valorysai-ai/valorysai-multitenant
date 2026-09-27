@@ -67,4 +67,14 @@ window.CONFIG_READY.then((config) => {
     // Nombre del agente en el copyright del footer
     const copyrightNombreEl = document.getElementById('footer-copyright-nombre')
     if (copyrightNombreEl) copyrightNombreEl.textContent = config.nombre
+
+    // Logos de typeform.html (header, overlay de carga, overlay OTP)
+    const headerLogoTf = document.getElementById('tf-header-logo')
+    if (headerLogoTf) headerLogoTf.textContent = config.nombre
+
+    const loadingLogoTf = document.getElementById('tf-loading-logo')
+    if (loadingLogoTf) loadingLogoTf.textContent = config.nombre
+
+    const otpLogoTf = document.getElementById('tf-otp-logo')
+    if (otpLogoTf) otpLogoTf.textContent = config.nombre
 })

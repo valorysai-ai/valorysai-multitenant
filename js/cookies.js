@@ -1,7 +1,9 @@
 // ─── META PIXEL CON CONSENT MODE ─────────────────────────────────────────────
 
-function inicializarPixel() {
-    if (window.fbq) return
+let PIXEL_CARGADO = false
+
+function inicializarPixel(pixelId) {
+    if (!pixelId || window.fbq) return
 
     !function(f,b,e,v,n,t,s)
     {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -14,18 +16,21 @@ function inicializarPixel() {
 
     // Consent Mode — revocado por defecto (sin cookies, sin identificadores)
     fbq('consent', 'revoke')
-    fbq('init', '506793339161273')
+    fbq('init', pixelId)
     fbq('track', 'PageView')
+
+    PIXEL_CARGADO = true
 }
 
 // ─── BANNER DE COOKIES ────────────────────────────────────────────────────────
 
-function mostrarBannerCookies() {
+async function mostrarBannerCookies() {
     const preferencia = localStorage.getItem('cookies_aceptadas')
     const banner = document.getElementById('cookies-banner')
 
-    // Inicializar pixel siempre — con consent revocado
-    inicializarPixel()
+    // Esperamos a saber qué agente es antes de inicializar SU Pixel
+    const config = await window.CONFIG_READY
+    inicializarPixel(config ? config.meta_dataset_id : null)
 
     if (!preferencia) {
         if (banner) banner.classList.add('visible')
@@ -33,7 +38,7 @@ function mostrarBannerCookies() {
     }
 
     // Si ya aceptó antes — grant consent
-    if (preferencia === 'all') {
+    if (preferencia === 'all' && PIXEL_CARGADO) {
         fbq('consent', 'grant')
     }
 }
@@ -42,8 +47,10 @@ function aceptarCookies() {
     localStorage.setItem('cookies_aceptadas', 'all')
     const banner = document.getElementById('cookies-banner')
     if (banner) banner.classList.remove('visible')
-    fbq('consent', 'grant')
-    fbq('track', 'PageView')
+    if (PIXEL_CARGADO) {
+        fbq('consent', 'grant')
+        fbq('track', 'PageView')
+    }
 }
 
 function rechazarCookies() {
