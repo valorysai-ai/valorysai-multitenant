@@ -81,4 +81,41 @@ window.CONFIG_READY.then((config) => {
     // Nombre del agente en la tarjeta CTA de resultado.html
     const ctaNombreEl = document.getElementById('cta-nombre')
     if (ctaNombreEl) ctaNombreEl.textContent = config.nombre
+
+    // ─── Datos legales (legal.html) ─────────────────────────────────────────
+    // Si a un agente le falta algún dato legal se muestra "[pendiente de
+    // completar]" en vez de dejar "Cargando..." para siempre en un aviso legal.
+    const PENDIENTE = '[pendiente de completar]'
+
+    const datosLegales = {
+        nombre:    config.legal_nombre,
+        nif:       config.legal_nif,
+        domicilio: config.legal_domicilio,
+        red:       config.legal_vinculo_red
+    }
+
+    document.querySelectorAll('[data-legal]').forEach(el => {
+        const valor = datosLegales[el.dataset.legal]
+        if (el.dataset.legal === 'red') {
+            if (valor) el.textContent = valor   // la red es opcional: si no hay, se oculta el bloque
+            return
+        }
+        el.textContent = valor || PENDIENTE
+    })
+
+    document.querySelectorAll('[data-legal-email]').forEach(el => {
+        if (config.legal_email) {
+            el.textContent = config.legal_email
+            el.href = `mailto:${config.legal_email}`
+        } else {
+            el.textContent = PENDIENTE
+        }
+    })
+
+    // Bloques que solo aplican si el agente pertenece a una red (ej. SAFTI)
+    if (config.legal_vinculo_red) {
+        document.querySelectorAll('[data-legal-red]').forEach(el => {
+            el.hidden = false
+        })
+    }
 })
