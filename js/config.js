@@ -77,4 +77,8 @@ window.CONFIG_READY.then((config) => {
 
     const otpLogoTf = document.getElementById('tf-otp-logo')
     if (otpLogoTf) otpLogoTf.textContent = config.nombre
+
+    // Nombre del agente en la tarjeta CTA de resultado.html
+    const ctaNombreEl = document.getElementById('cta-nombre')
+    if (ctaNombreEl) ctaNombreEl.textContent = config.nombre
 })
