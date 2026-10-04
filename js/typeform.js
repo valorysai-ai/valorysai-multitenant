@@ -37,6 +37,7 @@ const otpState = {
     prefijo: null,
     resultado: null,
     eventId: null,
+    agenteId: null,
     tipoInmueble: null,
     reenviosUsados: 0,
     cooldownActivo: false,
@@ -785,10 +786,10 @@ async function llamarSendOtp(telefono, prefijo) {
     }
 
     try {
-        const res = await fetch('https://aoauaprfomyzssovoebf.supabase.co/functions/v1/send-otp', {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/send-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telefono, prefijo })
+            body: JSON.stringify({ telefono, prefijo, agente_id: otpState.agenteId })
         })
         return await res.json()
     } catch (e) {
@@ -804,10 +805,10 @@ async function llamarVerifyOtp(telefono, prefijo, codigo) {
     }
 
     try {
-        const res = await fetch('https://aoauaprfomyzssovoebf.supabase.co/functions/v1/verify-otp', {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/verify-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telefono, prefijo, codigo })
+            body: JSON.stringify({ telefono, prefijo, codigo, agente_id: otpState.agenteId, event_id: otpState.eventId })
         })
         return await res.json()
     } catch (e) {
@@ -875,6 +876,15 @@ async function iniciarVerificacion() {
     // porque podría no haberse resuelto todavía si el usuario fue muy rápido.
     const config = await window.CONFIG_READY
 
+    // Sin agente no podemos guardar el lead (la base de datos lo rechazaría y se
+    // perdería en silencio), así que avisamos al usuario en vez de aceptar el formulario.
+    if (!config) {
+        btn.classList.remove('tf-btn--loading')
+        btn.disabled = false
+        mostrarError('No hemos podido cargar la configuración de esta página. Recárgala e inténtalo de nuevo.')
+        return
+    }
+
     const lead = {
         nombre,
         email,
@@ -889,6 +899,7 @@ async function iniciarVerificacion() {
         tiene_terraza:         datos.tieneTerraza,
         m2_terraza:            datos.m2Terraza,
         tiene_parking:         datos.tieneParking,
+        tiene_trastero:        datos.tieneTrastero,
         tipo_inmueble:         datos.tipo_inmueble === 14 ? 'Piso' : 'Casa',
         estado:                datos.estado,
         precio_estimado_bajo:  resultado.rangoBajo,
@@ -896,14 +907,16 @@ async function iniciarVerificacion() {
         nivel_dato:            resultado.nivel,
         rgpd:                  true,
         rgpd_marketing,
-        agente:                config?.nombre || 'sin-agente',
-        agente_id:              config?.id || null,
+        agente:                config.slug || config.nombre,   // el CRM filtra los leads por el slug del agente
+        agente_id:             config.id,
+        dominio_captura:       window.location.hostname,
         es_propietario:        datos.es_propietario,
         quiere_vender:         datos.quiere_vender,
         plazo_venta:           datos.plazo_venta,
         valor_percibido:       datos.valor_percibido,
         tipo_lead:             calcularTipoLead(),
         created_at:            new Date().toISOString(),
+        fase:                  'nuevo',
         telefono_verificado:   false,
         // ─── datos para Meta Conversions API ──────────────────────────────────
         event_id:              eventId,
@@ -971,16 +984,16 @@ async function iniciarVerificacion() {
 
     // El lead se guarda SIEMPRE en este punto — verifique o no el OTP después.
     // Se ESPERA (await) a que termine antes de continuar: si no, podríamos llegar
-    // a la pantalla del OTP sin que la fila exista aún en Supabase, y el PATCH
-    // de marcarTelefonoVerificado() fallaría al no encontrar ninguna fila que
-    // coincida con el event_id.
-    enviarGHL(payloadGHL).catch(() => {})
+    // a la pantalla del OTP sin que la fila exista aún en Supabase, y verify-otp
+    // no encontraría ninguna fila que marcar como verificada.
+    enviarGHL(payloadGHL, config.id).catch(() => {})
 
     // Guardamos lo necesario para la verificación y para el evento Meta posterior
     otpState.telefono     = telefono.replace(/\s/g, '')
     otpState.prefijo      = prefijo
     otpState.resultado    = resultado
     otpState.eventId      = eventId
+    otpState.agenteId     = config.id
     otpState.tipoInmueble = datos.tipo_inmueble
 
     // El overlay de carga, el envío del SMS y el guardado en Supabase ocurren EN
@@ -1019,8 +1032,8 @@ async function iniciarVerificacion() {
 }
 
 // ─── CONFIRMAR CÓDIGO OTP ──────────────────────────────────────────────────────
-// Solo si el código es correcto se marca el lead como verificado, se dispara
-// el evento Lead del Pixel, y se redirige. El overlay de carga ya se mostró
+// Solo si el código es correcto (verify-otp ya marca el lead como verificado) se
+// dispara el evento Lead del Pixel y se redirige. El overlay de carga ya se mostró
 // antes (en iniciarVerificacion), así que no se repite aquí.
 
 async function confirmarOtp() {
@@ -1046,11 +1059,8 @@ async function confirmarOtp() {
         return
     }
 
-    // Se ESPERA a que termine antes de navegar — si no, el cambio de página
-    // cancela la petición a medias (el navegador aborta cualquier fetch en
-    // marcha al desconectarse de la página actual), y aunque Twilio confirme
-    // el código como válido, la columna se quedaría en false por la carrera.
-    await marcarTelefonoVerificado(otpState.eventId)
+    // telefono_verificado = true lo escribe verify-otp desde el servidor, justo
+    // cuando Twilio aprueba el código. El navegador ya no tiene que hacer nada aquí.
 
     if (typeof fbq !== 'undefined') {
         fbq('track', 'Lead', {

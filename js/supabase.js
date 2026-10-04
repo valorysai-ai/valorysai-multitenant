@@ -1,7 +1,10 @@
 // ─── CONFIGURACIÓN SUPABASE ───────────────────────────────────────────────────
 
-const SUPABASE_URL = 'https://aoauaprfomyzssovoebf.supabase.co'
-const SUPABASE_ANON_KEY = 'sb_publishable_s53gKxpAyPcUihgX6RX7gA_VlNL79kj'
+// Mismo proyecto que config.js (que siempre se carga antes): una sola URL y una
+// sola clave para la tabla de leads Y para las Edge Functions. Si algún día cambia
+// el proyecto, solo hay que tocar config.js.
+const SUPABASE_URL = CONFIG_SUPABASE_URL
+const SUPABASE_ANON_KEY = CONFIG_SUPABASE_ANON_KEY
 
 // ─── GUARDAR LEAD CON REINTENTOS ──────────────────────────────────────────────
 
@@ -85,7 +88,7 @@ async function reenviarLeadPendiente() {
 
 async function enviarMetaConversion(lead) {
     try {
-        const SUPABASE_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1/clever-task`
+        const SUPABASE_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1/meta-capi`
 
         await fetch(SUPABASE_FUNCTIONS_URL, {
             method: 'POST',
@@ -94,6 +97,7 @@ async function enviarMetaConversion(lead) {
                 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
             },
             body: JSON.stringify({
+                agente_id:            lead.agente_id,
                 email:                lead.email,
                 telefono:             lead.telefono,
                 nombre:               lead.nombre,
@@ -109,26 +113,5 @@ async function enviarMetaConversion(lead) {
         })
     } catch (e) {
         console.warn('Meta Conversions API error:', e)
-    }
-}
-
-// ─── MARCAR TELÉFONO VERIFICADO (tras OTP correcto) ───────────────────────────
-
-async function marcarTelefonoVerificado(eventId) {
-    try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/leads?event_id=eq.${eventId}`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify({ telefono_verificado: true })
-        })
-        return response.ok
-    } catch (e) {
-        console.warn('Error marcando teléfono verificado:', e)
-        return false
     }
 }
